@@ -169,6 +169,10 @@ async function handleLogin(e) {
     `;
 
     try {
+        const health = await Api.health();
+        if (!health || health.status !== "online") {
+            throw new Error("Base de Datos MySQL desconectada. Enciende la máquina virtual en VirtualBox.");
+        }
         const result = await Api.login(usuario, password);
         currentUser = result.user;
         sessionStorage.setItem("autorent_user", JSON.stringify(currentUser));
@@ -306,6 +310,14 @@ async function checkHealth() {
         if (loginBadge) {
             loginBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-semibold border border-rose-200 mb-2.5 shadow-xs";
             loginBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>Base de Datos MySQL • Desconectada</span>`;
+        }
+        // Si estamos dentro del sistema (index.html) y la base de datos se apaga o está desconectada, cerrar sesión de inmediato
+        if (!isLoginPage()) {
+            currentUser = null;
+            sessionStorage.removeItem("autorent_user");
+            sessionStorage.removeItem("autorent_authenticated");
+            localStorage.removeItem("autorent_user");
+            window.location.replace("login.html");
         }
     }
 }
