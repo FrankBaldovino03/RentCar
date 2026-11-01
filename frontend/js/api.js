@@ -3,13 +3,22 @@
  * Conecta el frontend estrictamente con el backend Flask RESTful y MySQL en VirtualBox
  */
 
+const CLOUDFLARE_TUNNEL_URL = 'https://accounts-endif-pod-forums.trycloudflare.com';
+
 const API_BASE = (function() {
     if (window.location.protocol === 'file:') {
         return 'http://localhost:5000';
     }
     const host = (window.location.hostname || '').toLowerCase();
-    // Si corre en GitHub Pages u otro puerto distinto a 5000, apunta al servidor Flask local (:5000)
-    if (host.includes('github.io') || (window.location.port && window.location.port !== '5000')) {
+    // Si se abre directamente desde el túnel de Cloudflare o desde el propio Flask (:5000), usar ruta relativa
+    if (host.includes('trycloudflare.com') || window.location.port === '5000') {
+        return '';
+    }
+    // Si corre en GitHub Pages, usar el túnel público de Cloudflare hacia tu Flask + MySQL en VirtualBox
+    if (host.includes('github.io')) {
+        return CLOUDFLARE_TUNNEL_URL;
+    }
+    if (window.location.port && window.location.port !== '5000') {
         return 'http://localhost:5000';
     }
     return '';
@@ -17,6 +26,7 @@ const API_BASE = (function() {
 
 const Api = {
     baseUrl: API_BASE,
+    fallbackLocalUrl: 'http://localhost:5000',
 
     async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
@@ -41,14 +51,28 @@ const Api = {
                 : await response.text();
 
             if (!response.ok) {
+                // Si el túnel devolvió 530/502 y el usuario está en su propio PC, intentar localhost:5000
+                if (this.baseUrl === CLOUDFLARE_TUNNEL_URL && (response.status === 530 || response.status === 502 || response.status === 504)) {
+                    const localRes = await fetch(`${this.fallbackLocalUrl}${endpoint}`, config);
+                    const localData = await localRes.json();
+                    if (localRes.ok) return localData;
+                }
                 const message = (data && data.error) ? data.error : (data.message || `Error HTTP ${response.status}`);
                 throw new Error(message);
             }
 
             return data;
         } catch (error) {
+            // Si falló el túnel y el usuario está en su propio PC, intentar localhost:5000 antes de mostrar error
+            if (this.baseUrl === CLOUDFLARE_TUNNEL_URL) {
+                try {
+                    const localRes = await fetch(`${this.fallbackLocalUrl}${endpoint}`, config);
+                    const localData = await localRes.json();
+                    if (localRes.ok) return localData;
+                } catch (e) {}
+            }
             if (error instanceof TypeError || (error.message && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Load failed')))) {
-                throw new Error('Servidor o Base de Datos MySQL desconectada. Verifica que el backend Flask (localhost:5000) y la máquina virtual en VirtualBox estén encendidos.');
+                throw new Error('Servidor o Base de Datos MySQL desconectada. Verifica que el backend Flask y la máquina virtual en VirtualBox estén encendidos.');
             }
             console.error(`[API Error] ${config.method || 'GET'} ${url}:`, error);
             throw error;
