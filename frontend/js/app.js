@@ -51,25 +51,52 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ==========================================================================
    AUTENTICACIÓN Y SESIÓN (TABLA: usuario)
    ========================================================================== */
+function isLoginPage() {
+    const path = (window.location.pathname || "").toLowerCase();
+    return path.endsWith("login.html") || Boolean(document.getElementById("auth-screen") && !document.getElementById("app-layout"));
+}
+
 function initAuth() {
-    currentUser = null;
+    const isLogin = isLoginPage();
+    const storedUser = sessionStorage.getItem("autorent_user") || localStorage.getItem("autorent_user");
 
-    // Se limpia cualquier sesión persistente previa para que SIEMPRE inicie en el Login
-    localStorage.removeItem("autorent_user");
-    sessionStorage.removeItem("autorent_user");
+    if (isLogin) {
+        currentUser = null;
+        const uInput = document.getElementById("login-usuario");
+        const pInput = document.getElementById("login-password");
+        if (uInput) uInput.value = "";
+        if (pInput) pInput.value = "";
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
 
-    // Limpiar campos del formulario de login
-    const uInput = document.getElementById("login-usuario");
-    const pInput = document.getElementById("login-password");
-    if (uInput) uInput.value = "";
-    if (pInput) pInput.value = "";
+    // Estamos en index.html (Panel Principal)
+    if (!storedUser) {
+        window.location.replace("login.html");
+        return;
+    }
 
-    showAuthScreen();
+    try {
+        currentUser = JSON.parse(storedUser);
+    } catch (e) {
+        sessionStorage.removeItem("autorent_user");
+        localStorage.removeItem("autorent_user");
+        window.location.replace("login.html");
+        return;
+    }
+
+    showAppLayout();
     checkHealth();
+    loadCatalogs();
+    navigate("dashboard");
     setInterval(checkHealth, 30000);
 }
 
 function showAuthScreen() {
+    if (!isLoginPage()) {
+        window.location.href = "login.html";
+        return;
+    }
     const authEl = document.getElementById("auth-screen");
     const appEl = document.getElementById("app-layout");
     if (authEl) authEl.classList.remove("hidden");
@@ -111,6 +138,7 @@ async function handleLogin(e) {
     e.preventDefault();
     const usuarioInput = document.getElementById("login-usuario");
     const passwordInput = document.getElementById("login-password");
+    const rememberInput = document.getElementById("login-remember");
     const btnSubmit = document.getElementById("btn-login-submit");
 
     const usuario = usuarioInput.value.trim();
@@ -135,7 +163,17 @@ async function handleLogin(e) {
     try {
         const result = await Api.login(usuario, password);
         currentUser = result.user;
-        localStorage.setItem("autorent_user", JSON.stringify(currentUser));
+        sessionStorage.setItem("autorent_user", JSON.stringify(currentUser));
+        if (!rememberInput || rememberInput.checked) {
+            localStorage.setItem("autorent_user", JSON.stringify(currentUser));
+        } else {
+            localStorage.removeItem("autorent_user");
+        }
+
+        if (isLoginPage()) {
+            window.location.href = "index.html";
+            return;
+        }
 
         toastSuccess(result.message || `Bienvenido, ${currentUser.nombre_completo}`);
         showAppLayout();
@@ -173,11 +211,9 @@ async function logout() {
 
     if (confirm.isConfirmed) {
         currentUser = null;
+        sessionStorage.removeItem("autorent_user");
         localStorage.removeItem("autorent_user");
-        showAuthScreen();
-        const passEl = document.getElementById("login-password");
-        if (passEl) passEl.value = "";
-        toastSuccess("Sesión finalizada correctamente");
+        window.location.href = "login.html";
     }
 }
 

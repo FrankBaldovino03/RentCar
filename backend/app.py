@@ -36,6 +36,12 @@ def serve_index():
     return send_from_directory(FRONTEND_DIR, "index.html")
 
 
+@app.route("/login")
+@app.route("/login.html")
+def serve_login():
+    return send_from_directory(FRONTEND_DIR, "login.html")
+
+
 @app.route("/<path:filename>")
 def serve_frontend(filename):
     return send_from_directory(FRONTEND_DIR, filename)

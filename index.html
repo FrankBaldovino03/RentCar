@@ -52,97 +52,9 @@
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
 
     <!-- ==========================================
-         PANTALLA DE INICIO DE SESIÓN (LOGIN)
-         AutoRent Pro - Acceso al Centro Operativo
-         ========================================== -->
-    <!-- ==========================================
-         PANTALLA DE INICIO DE SESIÓN (LOGIN)
-         AutoRent Pro - Acceso Ejecutivo al Sistema
-         ========================================== -->
-    <div id="auth-screen" class="auth-wrapper">
-        <!-- Orbes de luz ambiental de fondo -->
-        <div class="auth-ambient-glow-1"></div>
-        <div class="auth-ambient-glow-2"></div>
-
-        <div class="auth-card-clean">
-            <!-- Header con Logo & Identidad de Marca -->
-            <div class="text-center mb-4">
-                <!-- Badge de Estado del Sistema -->
-                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100/90 text-slate-700 text-[10px] font-semibold border border-slate-200/80 mb-2.5 shadow-xs">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Sistema Operativo • Online</span>
-                </div>
-
-                <!-- Emblema de Marca con Glow -->
-                <div class="flex justify-center mb-2">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/25">
-                        <i data-lucide="car" class="w-6 h-6 stroke-[2.2]"></i>
-                    </div>
-                </div>
-
-                <!-- Título de Marca -->
-                <div class="flex items-center justify-center gap-1 text-xl font-black text-slate-900 tracking-tight leading-none">
-                    <span>AutoRent</span><span class="text-blue-600">Pro</span>
-                </div>
-                <p class="text-[9px] tracking-[0.2em] font-extrabold text-slate-400 uppercase mt-1">RENT-A-CAR • GESTIÓN DE FLOTA</p>
-
-                <h1 class="text-lg font-bold text-slate-900 tracking-tight mt-3">Iniciar Sesión</h1>
-            </div>
-
-            <!-- Formulario de Login -->
-            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-3.5">
-                
-                <!-- Campo Usuario / Correo -->
-                <div class="space-y-1">
-                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                        Usuario o Correo
-                    </label>
-                    <div class="auth-input-group">
-                        <i data-lucide="mail" class="auth-input-icon"></i>
-                        <input type="text" id="login-usuario" required autofocus placeholder="Usuario o correo" class="auth-input-field !py-2.5 !text-xs" autocomplete="username">
-                    </div>
-                </div>
-
-                <!-- Campo Contraseña -->
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between">
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                            Contraseña
-                        </label>
-                        <button type="button" onclick="showForgotPassHelp()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                            ¿Olvidaste tu clave?
-                        </button>
-                    </div>
-                    <div class="auth-input-group">
-                        <i data-lucide="lock" class="auth-input-icon"></i>
-                        <input type="password" id="login-password" required placeholder="Contraseña" class="auth-input-field !py-2.5 !text-xs" autocomplete="current-password">
-                        <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('login-password', this)" title="Mostrar / Ocultar contraseña">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Recordarme en este equipo -->
-                <div class="flex items-center justify-between pt-0.5">
-                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-600 hover:text-slate-800">
-                        <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
-                        <span>Recordar en este equipo</span>
-                    </label>
-                </div>
-
-                <!-- Botón de Ingreso Principal -->
-                <button type="submit" id="btn-login-submit" class="auth-submit-btn !py-2.5 !text-xs mt-2">
-                    <span>Ingresar al Sistema</span>
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ==========================================
          APLICACIÓN PRINCIPAL (PANEL DE GESTIÓN)
          ========================================== -->
-    <div id="app-layout" class="flex h-screen w-full overflow-hidden hidden">
+    <div id="app-layout" class="flex h-screen w-full overflow-hidden">
 
         <!-- SIDEBAR DE NAVEGACIÓN -->
         <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800 transition-all duration-300">

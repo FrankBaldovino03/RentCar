@@ -1,0 +1,1335 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoRent Pro - Gestión Operativa y Control de Flota</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Chart.js para Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Estilos Externos Modulares -->
+    <link rel="stylesheet" href="frontend/css/style.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
+
+    <!-- ==========================================
+         APLICACIÓN PRINCIPAL (PANEL DE GESTIÓN)
+         ========================================== -->
+    <div id="app-layout" class="flex h-screen w-full overflow-hidden">
+
+        <!-- SIDEBAR DE NAVEGACIÓN -->
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800 transition-all duration-300">
+            <div class="h-16 flex items-center px-6 gap-3 border-b border-slate-800">
+                <div class="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <i data-lucide="car" class="w-5 h-5"></i>
+                </div>
+            <div>
+                <h1 class="font-bold text-white tracking-wide text-base leading-tight">AutoRent <span class="text-blue-500">Pro</span></h1>
+                <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">CUN • Gestión Flota</p>
+            </div>
+        </div>
+
+        <!-- Menú de Vistas -->
+        <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1 text-sm font-medium">
+            <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-item active">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3"></i> Dashboard
+            </button>
+
+            <div class="pt-4 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Flota y Operaciones</div>
+
+            <button onclick="navigate('vehiculos')" id="nav-vehiculos" class="nav-item">
+                <i data-lucide="car-front" class="w-4 h-4 mr-3"></i> Flota Vehicular
+            </button>
+            <button onclick="navigate('reservas')" id="nav-reservas" class="nav-item">
+                <i data-lucide="calendar-check" class="w-4 h-4 mr-3"></i> Reservas
+            </button>
+            <button onclick="navigate('alquileres')" id="nav-alquileres" class="nav-item">
+                <i data-lucide="key-round" class="w-4 h-4 mr-3"></i> Contratos Alquiler
+            </button>
+            <button onclick="navigate('pagos')" id="nav-pagos" class="nav-item">
+                <i data-lucide="receipt" class="w-4 h-4 mr-3"></i> Pagos y Caja
+            </button>
+            <button onclick="navigate('mantenimientos')" id="nav-mantenimientos" class="nav-item">
+                <i data-lucide="wrench" class="w-4 h-4 mr-3"></i> Mantenimiento
+            </button>
+
+            <div class="pt-4 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Administración</div>
+
+            <button onclick="navigate('clientes')" id="nav-clientes" class="nav-item">
+                <i data-lucide="users" class="w-4 h-4 mr-3"></i> Clientes
+            </button>
+            <button onclick="navigate('empleados')" id="nav-empleados" class="nav-item">
+                <i data-lucide="badge-check" class="w-4 h-4 mr-3"></i> Empleados
+            </button>
+        </nav>
+
+        <!-- Indicador de Enlace a Base de Datos MySQL -->
+        <div class="p-4 border-t border-slate-800">
+            <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-slate-400">MySQL Server</span>
+                <span id="db-badge" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Conectando...
+                </span>
+            </div>
+            <p id="db-details" class="text-[11px] text-slate-500 truncate">VirtualBox VM (192.168.56.101)</p>
+        </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- HEADER SUPERIOR -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0">
+            <div>
+                <h2 id="view-title" class="text-xl font-bold text-slate-800">Dashboard General</h2>
+                <span id="view-subtitle" class="text-xs text-slate-500">Métricas de AutoRent Pro en tiempo real</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-slate-100 py-1 px-3 rounded-full text-xs text-slate-600 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>API Flask :5000</span>
+                </div>
+                <button onclick="fetchCurrentView()" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors" title="Actualizar datos">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Perfil de Usuario en Sesión (Tabla usuario) -->
+                <div class="flex items-center gap-3 pl-3 border-l border-slate-200">
+                    <button type="button" onclick="openModalPerfil()" class="flex items-center gap-2.5 text-left p-1 -m-1 rounded-xl hover:bg-slate-100 transition-all group focus:outline-none focus:ring-2 focus:ring-blue-400" title="Ver y editar mi perfil de administrador">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-sky-500 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm group-hover:scale-105 transition-transform ring-2 ring-transparent group-hover:ring-blue-400" id="user-avatar">
+                            AD
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <div class="text-xs font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors flex items-center gap-1" id="user-display-name">Administrador <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:text-blue-600"></i></div>
+                            <div class="text-[11px] text-slate-500 font-medium" id="user-display-role">admin</div>
+                        </div>
+                    </button>
+                    <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-1" title="Cerrar Sesión">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENEDOR DINÁMICO DE VISTAS -->
+        <div id="content-container" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-6">
+
+            <!-- ==========================================
+                 VISTA: DASHBOARD
+                 ========================================== -->
+            <section id="view-dashboard" class="space-y-6">
+                <!-- Tarjetas KPI -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="kpi-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Flota</p>
+                                <h3 id="kpi-total-vehiculos" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                                <i data-lucide="car" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center gap-2 text-xs">
+                            <span id="kpi-disponibles" class="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded">0 disp.</span>
+                            <span id="kpi-alquilados" class="text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded">0 alquilados</span>
+                            <span id="kpi-mantenimiento" class="text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded">0 en taller</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Alquileres Activos</p>
+                                <h3 id="kpi-alquileres-activos" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                                <i data-lucide="key-round" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-slate-500">Vehículos en circulación con contrato</p>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Reservas</p>
+                                <h3 id="kpi-total-reservas" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
+                                <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <span id="kpi-res-pendientes" class="text-amber-700 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">0 Pendientes</span>
+                            <span id="kpi-res-confirmadas" class="text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">0 Confirmadas</span>
+                            <span id="kpi-res-finalizadas" class="text-blue-700 font-medium bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">0 Finalizadas</span>
+                            <span id="kpi-res-canceladas" class="text-slate-600 font-medium bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">0 Canceladas</span>
+                            <span id="kpi-res-rechazadas" class="text-rose-700 font-medium bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">0 Rechazadas</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Recaudo Total</p>
+                                <h3 id="kpi-total-recaudo" class="text-2xl font-bold text-slate-800 mt-1">$ 0</h3>
+                            </div>
+                            <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+                                <i data-lucide="receipt" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-slate-500">Ingresos consolidados en pagos</p>
+                    </div>
+                </div>
+
+                <!-- ACCESO DIRECTO RÁPIDO: NUEVO ALQUILER (DEBAJO DE LOS KPIS) -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-xs">
+                            <i data-lucide="zap" class="w-5 h-5 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-slate-800 text-base">Nuevo Alquiler</h3>
+                                <span class="px-2 py-0.5 rounded-full bg-blue-100/80 text-blue-700 text-[11px] font-bold uppercase tracking-wider">Acceso Directo</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Registra al cliente de inmediato si es nuevo, elige el vehículo y asienta el abono o pago en 1 solo paso sin salir de la ventana.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="shrink-0 w-full sm:w-auto">
+                        <button type="button" onclick="openModalAlquiler()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Alquiler
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gráficas de Rendimiento -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                        <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> Distribución de la Flota
+                        </h4>
+                        <div class="relative flex-1 min-h-[220px]">
+                            <canvas id="chart-flota-estados"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm lg:col-span-2 flex flex-col">
+                        <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-600"></i> Total Registros en Base de Datos
+                        </h4>
+                        <div class="relative flex-1 min-h-[220px]">
+                            <canvas id="chart-actividad-db"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tablas de Actividad Reciente -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Últimos Alquileres -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> Últimos Alquileres
+                            </h4>
+                            <button onclick="navigate('alquileres')" class="text-xs text-blue-600 hover:underline font-medium">Ver todos</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="text-slate-400 border-b border-slate-100">
+                                    <tr>
+                                        <th class="pb-2 font-medium">Cliente</th>
+                                        <th class="pb-2 font-medium">Vehículo</th>
+                                        <th class="pb-2 font-medium">Fecha</th>
+                                        <th class="pb-2 font-medium">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-ultimos-alquileres" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Últimas Reservas -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i> Últimas Reservas
+                            </h4>
+                            <button onclick="navigate('reservas')" class="text-xs text-blue-600 hover:underline font-medium">Ver todas</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="text-slate-400 border-b border-slate-100">
+                                    <tr>
+                                        <th class="pb-2 font-medium">Cliente</th>
+                                        <th class="pb-2 font-medium">Vehículo</th>
+                                        <th class="pb-2 font-medium">Fecha</th>
+                                        <th class="pb-2 font-medium">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-ultimas-reservas" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: FLOTA DE VEHÍCULOS
+                 ========================================== -->
+            <section id="view-vehiculos" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-3 w-full sm:w-auto flex-1">
+                        <div class="relative flex-1 max-w-sm">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="vehiculos-search" oninput="debounce(loadVehiculos, 300)()" placeholder="Buscar por placa, modelo o marca..." class="input-search">
+                        </div>
+                        <select id="vehiculos-filtro-estado" onchange="loadVehiculos()" class="select-filter">
+                            <option value="">Todos los Estados</option>
+                            <option value="Disponible">Disponible</option>
+                            <option value="Alquilado">Alquilado</option>
+                            <option value="Reservado">Reservado</option>
+                            <option value="En mantenimiento">En Mantenimiento</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                    <button onclick="openModalVehiculo()" class="btn-primary w-full sm:w-auto justify-center">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Vehículo
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'id_vehiculo')">ID <span id="sort-vehiculos-id_vehiculo">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'placa')">Placa</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'modelo')">Marca y Modelo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Tipo</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'año')">Año y Color</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'kilometraje')">Odómetro</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('vehiculos', 'estado')">Estado</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-vehiculos-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-vehiculos"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: RESERVAS
+                 ========================================== -->
+            <section id="view-reservas" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-3 w-full sm:w-auto flex-1">
+                        <div class="relative flex-1 max-w-sm">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="reservas-search" oninput="debounce(loadReservas, 300)()" placeholder="Buscar por cliente o placa..." class="input-search">
+                        </div>
+                        <select id="reservas-filtro-estado" onchange="loadReservas()" class="select-filter">
+                            <option value="">Todas las Reservas</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Confirmada">Confirmada</option>
+                            <option value="Finalizada">Finalizada</option>
+                            <option value="Cancelada">Cancelada</option>
+                            <option value="Rechazada">Rechazada</option>
+                        </select>
+                    </div>
+                    <button onclick="openModalReserva()" class="btn-primary w-full sm:w-auto justify-center">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nueva Reserva
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('reservas', 'id_reserva')">ID <span id="sort-reservas-id_reserva">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('reservas', 'cliente_nombre')">Cliente</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('reservas', 'vehiculo_placa')">Vehículo</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('reservas', 'fecha_inicio')">Fecha Reserva</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Fecha Registro</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Estado</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-reservas-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-reservas"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: ALQUILERES / ENTREGAS
+                 ========================================== -->
+            <section id="view-alquileres" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-3 w-full sm:w-auto flex-1">
+                        <div class="relative flex-1 max-w-sm">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="alquileres-search" oninput="debounce(loadAlquileres, 300)()" placeholder="Buscar contrato, cliente o placa..." class="input-search">
+                        </div>
+                        <select id="alquileres-filtro-estado" onchange="loadAlquileres()" class="select-filter">
+                            <option value="">Todos los Estados</option>
+                            <option value="Activo">Activos (En Curso)</option>
+                            <option value="Pendiente">Pendientes</option>
+                            <option value="Finalizado">Finalizados / Retornados</option>
+                            <option value="Cancelado">Cancelados</option>
+                        </select>
+                    </div>
+                    <button onclick="openModalAlquiler()" class="btn-primary w-full sm:w-auto justify-center">
+                        <i data-lucide="key" class="w-4 h-4"></i> Iniciar Contrato Alquiler
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('alquileres', 'id_alquiler')">Contrato <span id="sort-alquileres-id_alquiler">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('alquileres', 'cliente_nombre')">Cliente</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('alquileres', 'vehiculo_placa')">Vehículo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Asesor Responsable</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('alquileres', 'km_inicio')">Kilometraje</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Estado</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-alquileres-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-alquileres"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: PAGOS Y CAJA
+                 ========================================== -->
+            <section id="view-pagos" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
+                        <div class="relative max-w-sm w-full flex-1">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="pagos-search" oninput="debounce(loadPagos, 300)()" placeholder="Buscar por contrato, cliente o referencia..." class="input-search">
+                        </div>
+                        <select id="pagos-filtro-estado" onchange="loadPagos()" class="select-filter w-full sm:w-auto">
+                            <option value="">Todos los Estados</option>
+                            <option value="Pendiente">Pendientes (Por Cobrar)</option>
+                            <option value="Abono">Abonos (Pagos Parciales)</option>
+                            <option value="Completado">Completados / Pagados</option>
+                            <option value="Rechazado">Rechazados / Anulados</option>
+                        </select>
+                    </div>
+                    <button onclick="openModalPago()" class="btn-primary w-full sm:w-auto justify-center">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Registrar Pago
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-3 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'id_pago')">Recibo # <span id="sort-pagos-id_pago">▲</span></th>
+                                    <th class="px-3 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'id_alquiler')">Contrato</th>
+                                    <th class="px-3 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'cliente_nombre')">Cliente</th>
+                                    <th class="px-2.5 py-3 whitespace-nowrap">Método</th>
+                                    <th class="px-3 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'monto')">Monto</th>
+                                    <th class="px-2.5 py-3 whitespace-nowrap">Referencia</th>
+                                    <th class="px-2.5 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'fecha_pago')">Fecha</th>
+                                    <th class="px-2.5 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('pagos', 'estado')">Estado</th>
+                                    <th class="px-3 py-3 text-right pr-4 whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-pagos-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-pagos"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: MANTENIMIENTO TÉCNICO
+                 ========================================== -->
+            <section id="view-mantenimientos" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
+                        <div class="relative max-w-sm w-full flex-1">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="mantenimientos-search" oninput="debounce(loadMantenimientos, 300)()" placeholder="Buscar por placa, mecánico u orden..." class="input-search">
+                        </div>
+                        <select id="mantenimientos-filtro-estado" onchange="loadMantenimientos()" class="select-filter w-full sm:w-auto">
+                            <option value="">Todos los Estados</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En proceso">En proceso</option>
+                            <option value="Completado">Completado</option>
+                        </select>
+                    </div>
+                    <button onclick="openModalMantenimiento()" class="btn-primary w-full sm:w-auto justify-center">
+                        <i data-lucide="wrench" class="w-4 h-4"></i> Nueva Orden Taller
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('mantenimientos', 'id_mantenimiento')">Orden # <span id="sort-mantenimientos-id_mantenimiento">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('mantenimientos', 'vehiculo_placa')">Vehículo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Mecánico Asignado</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('mantenimientos', 'fecha_mantenimiento')">Fecha</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Descripción del Trabajo</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('mantenimientos', 'costo')">Costo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Estado</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-mantenimientos-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-mantenimientos"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: CLIENTES
+                 ========================================== -->
+            <section id="view-clientes" class="space-y-4 hidden">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="relative max-w-sm flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="clientes-search" oninput="debounce(loadClientes, 300)()" placeholder="Buscar por cédula, nombre o teléfono..." class="input-search">
+                    </div>
+                    <button onclick="openModalCliente()" class="btn-primary">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo Cliente
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('clientes', 'id_cliente')">ID <span id="sort-clientes-id_cliente">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('clientes', 'identificacion')">Identificación</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('clientes', 'nombre')">Nombre Completo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Teléfono</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Correo Electrónico</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Dirección</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-clientes-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-clientes"></div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VISTA: EMPLEADOS
+                 ========================================== -->
+            <section id="view-empleados" class="space-y-4 hidden">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="relative max-w-sm flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="empleados-search" oninput="debounce(loadEmpleados, 300)()" placeholder="Buscar por nombre o cargo..." class="input-search">
+                    </div>
+                    <button onclick="openModalEmpleado()" class="btn-primary">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo Empleado
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase select-none">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('empleados', 'id_empleado')">ID <span id="sort-empleados-id_empleado">▲</span></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('empleados', 'nombre')">Nombre Completo</th>
+                                    <th class="px-4 py-3 cursor-pointer hover:text-blue-600 whitespace-nowrap" onclick="toggleSort('empleados', 'cargo')">Cargo</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Contacto</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Fecha Ingreso</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Estado</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-empleados-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-empleados"></div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+    </div> <!-- FIN DE #app-layout -->
+
+    <!-- ==========================================
+         DIÁLOGOS MODALES
+         ========================================== -->
+
+    <!-- MODAL: VEHÍCULO -->
+    <div id="modal-vehiculo" class="modal-backdrop hidden">
+        <div class="modal-card max-w-lg">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 id="modal-vehiculo-title" class="font-bold text-slate-800 text-lg">Nuevo Vehículo</h3>
+                <button onclick="closeModal('modal-vehiculo')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-vehiculo" onsubmit="saveVehiculo(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="v-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Placa (Única)</label>
+                        <input type="text" id="v-placa" required placeholder="ABC123" class="input-form uppercase font-mono">
+                    </div>
+                    <div>
+                        <label class="label-form">Modelo</label>
+                        <input type="text" id="v-modelo" required placeholder="Corolla, Onix..." class="input-form">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Marca</label>
+                        <input type="text" id="v-marca" list="marcas-datalist" required placeholder="Escribe la marca (ej: Toyota, Chevrolet...)" class="input-form" autocomplete="off">
+                        <datalist id="marcas-datalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="label-form">Tipo de Vehículo</label>
+                        <select id="v-tipo" required class="input-form"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="label-form">Año</label>
+                        <input type="number" id="v-anio" required min="1990" max="2030" value="2024" class="input-form font-mono">
+                    </div>
+                    <div>
+                        <label class="label-form">Color</label>
+                        <input type="text" id="v-color" required placeholder="Blanco" class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Odómetro (KM)</label>
+                        <input type="number" id="v-km" required min="0" value="0" class="input-form font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="label-form">Estado Operativo</label>
+                    <select id="v-estado" class="input-form">
+                        <option value="Disponible">Disponible</option>
+                        <option value="Alquilado">Alquilado</option>
+                        <option value="Reservado">Reservado</option>
+                        <option value="En mantenimiento">En mantenimiento</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-vehiculo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Vehículo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: RESERVA -->
+    <div id="modal-reserva" class="modal-backdrop hidden">
+        <div class="modal-card max-w-md">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 id="modal-reserva-title" class="font-bold text-slate-800 text-lg">Nueva Reserva</h3>
+                <button onclick="closeModal('modal-reserva')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-reserva" onsubmit="saveReserva(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="res-id">
+                <div>
+                    <label class="label-form">Cliente <span class="text-rose-500">*</span></label>
+                    <input type="hidden" id="res-cliente" required>
+                    <div id="picker-res-cliente" class="search-picker-container"></div>
+                </div>
+                <div>
+                    <label class="label-form">Vehículo <span class="text-rose-500">*</span></label>
+                    <input type="hidden" id="res-vehiculo" required>
+                    <div id="picker-res-vehiculo" class="search-picker-container"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Fecha de Reserva</label>
+                        <input type="date" id="res-fecha" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Estado</label>
+                        <select id="res-estado" class="input-form">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Confirmada">Confirmada</option>
+                            <option value="Finalizada">Finalizada</option>
+                            <option value="Cancelada">Cancelada</option>
+                            <option value="Rechazada">Rechazada</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="label-form">Observaciones</label>
+                    <textarea id="res-obs" rows="2" placeholder="Notas sobre la reserva..." class="input-form text-xs"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-reserva')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" id="btn-save-reserva" class="btn-primary">Guardar Reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CONTRATO ALQUILER (CON REGISTRO RÁPIDO DE CLIENTE Y PAGO/ABONO INTEGRADO) -->
+    <div id="modal-alquiler" class="modal-backdrop hidden">
+        <div class="modal-card max-w-xl max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Alquiler Rápido de Vehículo</h3>
+                        <p class="text-xs text-slate-400">Todo en 1 solo paso: Cliente, Vehículo y Pago/Abono</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-alquiler')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form id="form-alquiler" onsubmit="saveAlquiler(event)" class="mt-4 space-y-4">
+                <!-- 1. SELECCIÓN O REGISTRO INLINE DE CLIENTE -->
+                <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="label-form !mb-0 font-bold text-slate-700 flex items-center gap-1.5">
+                            <i data-lucide="user" class="w-4 h-4 text-blue-600"></i> 1. Cliente Arrendatario <span class="text-rose-500">*</span>
+                        </label>
+                        <button type="button" id="btn-toggle-nuevo-cliente" onclick="toggleInlineNuevoCliente()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors inline-flex items-center gap-1 cursor-pointer">
+                            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + ¿Cliente Nuevo? Registrar aquí
+                        </button>
+                    </div>
+
+                    <!-- Buscador / Selector de Cliente -->
+                    <div id="wrapper-picker-cliente">
+                        <input type="hidden" id="alq-cliente" required>
+                        <div id="picker-alq-cliente" class="search-picker-container"></div>
+                    </div>
+
+                    <!-- Formulario Rápido Desplegable para Registrar Cliente Nuevo al Instante -->
+                    <div id="box-inline-nuevo-cliente" class="hidden p-3.5 bg-white rounded-xl border-2 border-blue-200 shadow-sm space-y-3 animate-fadeIn">
+                        <div class="flex items-center justify-between pb-2 border-b border-blue-100">
+                            <span class="text-xs font-bold text-blue-800 flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Registro Inmediato de Cliente
+                            </span>
+                            <button type="button" onclick="toggleInlineNuevoCliente(false)" class="text-xs text-slate-400 hover:text-slate-600">
+                                Cancelar
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                            <div>
+                                <label class="label-form text-[11px]">Cédula / Documento <span class="text-rose-500">*</span></label>
+                                <input type="text" id="quick-cli-doc" placeholder="Ej. 1045892341" class="input-form text-xs font-mono">
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">Teléfono Móvil <span class="text-rose-500">*</span></label>
+                                <input type="text" id="quick-cli-tel" placeholder="Ej. 3001234567" class="input-form text-xs">
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">Nombres <span class="text-rose-500">*</span></label>
+                                <input type="text" id="quick-cli-nom" placeholder="Nombres del cliente" class="input-form text-xs">
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">Apellidos <span class="text-rose-500">*</span></label>
+                                <input type="text" id="quick-cli-ape" placeholder="Apellidos del cliente" class="input-form text-xs">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="label-form text-[11px]">Correo Electrónico (Opcional)</label>
+                                <input type="email" id="quick-cli-cor" placeholder="cliente@ejemplo.com" class="input-form text-xs">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button type="button" onclick="toggleInlineNuevoCliente(false)" class="btn-secondary !py-1 !px-3 text-xs">Volver al buscador</button>
+                            <button type="button" onclick="submitQuickCliente()" class="btn-primary !py-1 !px-3 text-xs bg-blue-600 hover:bg-blue-700">
+                                <i data-lucide="check" class="w-3.5 h-3.5 inline"></i> Guardar y Seleccionar Cliente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. SELECCIÓN DE VEHÍCULO -->
+                <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-2">
+                    <label class="label-form font-bold text-slate-700 flex items-center gap-1.5">
+                        <i data-lucide="car" class="w-4 h-4 text-emerald-600"></i> 2. Vehículo de la Flota <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="hidden" id="alq-vehiculo" required>
+                    <div id="picker-alq-vehiculo" class="search-picker-container"></div>
+                </div>
+
+                <!-- 3. DETALLES OPERATIVOS (Asesor, Fecha y KM) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-form">Asesor Comercial <span class="text-rose-500">*</span></label>
+                        <input type="hidden" id="alq-empleado" required>
+                        <div id="picker-alq-empleado" class="search-picker-container"></div>
+                    </div>
+                    <div>
+                        <label class="label-form">Fecha y Hora Entrega</label>
+                        <input type="datetime-local" id="alq-fecha" required class="input-form text-xs">
+                    </div>
+                    <div>
+                        <label class="label-form">KM Inicial (Salida)</label>
+                        <input type="number" id="alq-km" required min="0" class="input-form font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="label-form">Estado del Contrato</label>
+                        <select id="alq-estado" class="input-form font-medium text-xs">
+                            <option value="Activo">Activo (Vehículo pasa a Alquilado)</option>
+                            <option value="Pendiente">Pendiente (En espera de entrega)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. PAGO O ABONO INICIAL INTEGRADO -->
+                <div class="bg-blue-50/60 p-3.5 rounded-xl border border-blue-200/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="label-form !mb-0 font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="credit-card" class="w-4 h-4 text-indigo-600"></i> 3. Pago / Abono Inicial
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-blue-700">
+                            <input type="checkbox" id="alq-incluir-pago" checked onchange="toggleSeccionPagoAlquiler(this.checked)" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4">
+                            <span>Registrar Pago / Abono Ahora</span>
+                        </label>
+                    </div>
+
+                    <div id="box-pago-alquiler" class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label class="label-form text-[11px]">Tipo de Pago / Estado <span class="text-rose-500">*</span></label>
+                                <select id="alq-pago-estado" class="input-form text-xs font-semibold text-slate-700" onchange="actualizarInfoTipoPago(this.value)">
+                                    <option value="Abono">Abono Inicial (Vehículo pasa a RESERVADO)</option>
+                                    <option value="Pagado">Completado / Pagado (Total)</option>
+                                    <option value="Pendiente">Pendiente (Por cobrar luego)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">Monto ($ COP) <span class="text-rose-500">*</span></label>
+                                <input type="number" id="alq-pago-monto" min="0" step="1000" placeholder="Ej. 150000" class="input-form text-xs font-mono font-bold text-blue-700">
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">Método de Pago <span class="text-rose-500">*</span></label>
+                                <select id="alq-pago-metodo" class="input-form text-xs"></select>
+                            </div>
+                            <div>
+                                <label class="label-form text-[11px]">N° Referencia / Comprobante</label>
+                                <input type="text" id="alq-pago-ref" placeholder="Ej. TRANSF-98234" class="input-form text-xs font-mono">
+                            </div>
+                        </div>
+
+                        <!-- Banner explicativo dinámico del estado -->
+                        <div id="pago-alquiler-hint" class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+                            <i data-lucide="info" class="w-4 h-4 shrink-0 text-amber-600 mt-0.5"></i>
+                            <div>
+                                <strong>Modo Abono Activo:</strong> El vehículo seleccionado quedará marcado inmediatamente como <strong>Reservado</strong> en la flota y mostrará el valor del abono registrado.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. OBSERVACIONES -->
+                <div>
+                    <label class="label-form">Observaciones / Notas de Entrega</label>
+                    <textarea id="alq-obs" rows="2" placeholder="Estado del vehículo, combustible, acuerdos especiales..." class="input-form text-xs"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-alquiler')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" id="btn-save-alquiler" class="btn-primary flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Firmar y Procesar Alquiler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CERRAR / RETORNO ALQUILER -->
+    <div id="modal-cerrar-alquiler" class="modal-backdrop hidden">
+        <div class="modal-card max-w-md">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 text-lg">Retorno y Cierre de Contrato</h3>
+                <button onclick="closeModal('modal-cerrar-alquiler')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-cerrar-alquiler" onsubmit="submitCerrarAlquiler(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="close-alq-id">
+                <div>
+                    <label class="label-form">Kilometraje de Retorno (KM Final)</label>
+                    <input type="number" id="close-alq-km-fin" required class="input-form font-mono text-base font-bold">
+                    <p id="close-alq-km-hint" class="text-xs text-slate-500 mt-1"></p>
+                </div>
+                <div>
+                    <label class="label-form">Observaciones de Recepción</label>
+                    <textarea id="close-alq-obs" rows="2" placeholder="Inspección de retorno, combustible, novedades..." class="input-form text-xs"></textarea>
+                </div>
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+                    <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i> El odómetro del vehículo se actualizará automáticamente y volverá a estar <strong>Disponible</strong>.
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-cerrar-alquiler')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary bg-emerald-600 hover:bg-emerald-700">Completar Retorno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: GESTIONAR CONTRATO (HUB DE ACCIONES) -->
+    <div id="modal-gestionar-alquiler" class="modal-backdrop hidden">
+        <div class="modal-card max-w-lg">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="gestionar-alq-titulo" class="font-bold text-slate-800 text-lg leading-tight">Gestionar Contrato</h3>
+                        <p id="gestionar-alq-subtitulo" class="text-xs text-slate-400">Acciones operativas y control de flota</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-gestionar-alquiler')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <!-- Banner de Contrato -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium">Estado del contrato:</span>
+                        <div id="gestionar-alq-badge" class="mt-0.5"></div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-500 font-medium">Vehículo Asignado:</span>
+                        <div id="gestionar-alq-vehiculo" class="text-xs font-mono font-bold text-slate-700"></div>
+                    </div>
+                </div>
+
+                <!-- Las 4 Acciones Principales -->
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">Selecciona la acción a realizar:</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- 1. Retorno / Cierre -->
+                        <button type="button" id="btn-gestionar-retorno" class="group text-left p-3.5 border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 rounded-xl transition-all shadow-xs">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="corner-down-left" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-slate-800 group-hover:text-emerald-700">Retorno / Cierre</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-snug">Registrar odómetro final y retornar el auto a Disponible.</p>
+                        </button>
+
+                        <!-- 2. Iniciar / Activar -->
+                        <button type="button" id="btn-gestionar-activar" class="group text-left p-3.5 border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-xl transition-all shadow-xs">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="play" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-slate-800 group-hover:text-blue-700">Iniciar / Activar</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-snug">Formalizar entrega al cliente y marcar auto como Alquilado.</p>
+                        </button>
+
+                        <!-- 3. Pasar a Pendiente -->
+                        <button type="button" id="btn-gestionar-pendiente" class="group text-left p-3.5 border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-xl transition-all shadow-xs">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="clock" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-slate-800 group-hover:text-amber-700">Pasar a Pendiente</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-snug">Dejar en espera / borrador y liberar vehículo a Disponible.</p>
+                        </button>
+
+                        <!-- 4. Cancelar Contrato -->
+                        <button type="button" id="btn-gestionar-cancelar" class="group text-left p-3.5 border border-slate-200 hover:border-rose-500 hover:bg-rose-50/40 rounded-xl transition-all shadow-xs">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="ban" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-slate-800 group-hover:text-rose-700">Cancelar Contrato</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-snug">Anular este contrato y restaurar vehículo a Disponible.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer del Modal -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button type="button" id="btn-gestionar-eliminar" class="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1.5 p-1 rounded hover:bg-rose-50 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Eliminar contrato
+                    </button>
+                    <button type="button" onclick="closeModal('modal-gestionar-alquiler')" class="btn-secondary text-xs py-1.5 px-3.5">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR / EDITAR PAGO -->
+    <div id="modal-pago" class="modal-backdrop hidden">
+        <div class="modal-card max-w-lg">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="receipt" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-pago-title" class="font-bold text-slate-800 text-lg leading-tight">Registrar Comprobante de Pago</h3>
+                        <p class="text-xs text-slate-400">Vincula el recaudo al contrato de alquiler</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-pago')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-pago" onsubmit="savePago(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="pago-id">
+                
+                <!-- Buscador de Contrato de Alquiler -->
+                <div>
+                    <label class="label-form flex items-center justify-between mb-1.5">
+                        <span class="flex items-center gap-1.5 font-semibold text-slate-700">
+                            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i> Contrato de Alquiler
+                        </span>
+                        <span class="text-[11px] font-normal text-slate-400">Busca por # contrato, cliente o placa</span>
+                    </label>
+                    <div id="picker-pago-alquiler"></div>
+                    <input type="hidden" id="pago-alquiler">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form flex items-center gap-1.5">
+                            <i data-lucide="credit-card" class="w-3.5 h-3.5 text-slate-500"></i> Método de Pago
+                        </label>
+                        <select id="pago-metodo" required class="input-form font-medium"></select>
+                    </div>
+                    <div>
+                        <label class="label-form flex items-center gap-1.5">
+                            <i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-emerald-600"></i> Monto ($ COP)
+                        </label>
+                        <input type="number" id="pago-monto" required min="1000" step="1000" placeholder="Ej: 350000" class="input-form font-mono font-semibold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form flex items-center gap-1.5">
+                            <i data-lucide="hash" class="w-3.5 h-3.5 text-slate-500"></i> Número de Referencia
+                        </label>
+                        <input type="text" id="pago-referencia" required class="input-form font-mono text-xs font-semibold uppercase">
+                    </div>
+                    <div>
+                        <label class="label-form flex items-center gap-1.5">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-slate-500"></i> Estado del Pago
+                        </label>
+                        <select id="pago-estado" class="input-form font-medium">
+                            <option value="Completado">✅ Completado (Pagado Total)</option>
+                            <option value="Abono">🟡 Abono (Pago Parcial)</option>
+                            <option value="Pendiente">⏳ Pendiente (Por Cobrar)</option>
+                            <option value="Rechazado">❌ Rechazado (Anulado)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-pago')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" id="btn-save-pago" class="btn-primary">Guardar Recibo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: MANTENIMIENTO TÉCNICO -->
+    <div id="modal-mantenimiento" class="modal-backdrop hidden">
+        <div class="modal-card max-w-md">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 text-lg">Nueva Orden de Mantenimiento</h3>
+                <button onclick="closeModal('modal-mantenimiento')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-mantenimiento" onsubmit="saveMantenimiento(event)" class="mt-4 space-y-4">
+                <div>
+                    <label class="label-form flex items-center justify-between mb-1.5">
+                        <span class="flex items-center gap-1.5 font-semibold text-slate-700">
+                            <i data-lucide="car" class="w-4 h-4 text-blue-600"></i> Vehículo <span class="text-rose-500">*</span>
+                        </span>
+                        <span class="text-[11px] font-normal text-slate-400">Busca por placa o modelo</span>
+                    </label>
+                    <input type="hidden" id="mant-vehiculo" required>
+                    <div id="picker-mant-vehiculo" class="search-picker-container"></div>
+                </div>
+                <div>
+                    <label class="label-form flex items-center justify-between mb-1.5">
+                        <span class="flex items-center gap-1.5 font-semibold text-slate-700">
+                            <i data-lucide="wrench" class="w-4 h-4 text-emerald-600"></i> Mecánico Asignado <span class="text-rose-500">*</span>
+                        </span>
+                        <span class="text-[11px] font-normal text-slate-400">Busca por nombre o cargo</span>
+                    </label>
+                    <input type="hidden" id="mant-empleado" required>
+                    <div id="picker-mant-empleado" class="search-picker-container"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Fecha de Servicio</label>
+                        <input type="date" id="mant-fecha" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Costo ($ COP)</label>
+                        <input type="number" id="mant-costo" required min="0" step="1000" placeholder="120000" class="input-form font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="label-form">Estado de la Orden</label>
+                    <select id="mant-estado" class="input-form">
+                        <option value="En proceso">En proceso</option>
+                        <option value="Completado">Completado</option>
+                        <option value="Pendiente">Pendiente</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label-form">Descripción del Trabajo</label>
+                    <textarea id="mant-desc" rows="2" placeholder="Cambio de aceite, frenos, revisión de suspensión..." class="input-form text-xs"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-mantenimiento')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Registrar Orden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CLIENTE -->
+    <div id="modal-cliente" class="modal-backdrop hidden">
+        <div class="modal-card max-w-md">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 id="modal-cliente-title" class="font-bold text-slate-800 text-lg">Registrar Cliente</h3>
+                <button onclick="closeModal('modal-cliente')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-cliente" onsubmit="saveCliente(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="c-id">
+                <div>
+                    <label class="label-form">Identificación (Cédula / DNI)</label>
+                    <input type="text" id="c-identificacion" required placeholder="1102888999" class="input-form font-mono">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Nombre</label>
+                        <input type="text" id="c-nombre" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Apellido</label>
+                        <input type="text" id="c-apellido" required class="input-form">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Teléfono</label>
+                        <input type="tel" id="c-telefono" required placeholder="3001234567" class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Correo Electrónico</label>
+                        <input type="email" id="c-correo" placeholder="cliente@correo.com" class="input-form">
+                    </div>
+                </div>
+                <div>
+                    <label class="label-form">Dirección Residencial</label>
+                    <input type="text" id="c-direccion" placeholder="Calle 25 # 14-30..." class="input-form">
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-cliente')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EMPLEADO -->
+    <div id="modal-empleado" class="modal-backdrop hidden">
+        <div class="modal-card max-w-md">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 id="modal-empleado-title" class="font-bold text-slate-800 text-lg">Registrar Empleado</h3>
+                <button onclick="closeModal('modal-empleado')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-empleado" onsubmit="saveEmpleado(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="emp-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Nombre</label>
+                        <input type="text" id="emp-nombre" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Apellido</label>
+                        <input type="text" id="emp-apellido" required class="input-form">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Cargo</label>
+                        <input type="text" id="emp-cargo" required placeholder="Asesor, Mecánico..." class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Teléfono</label>
+                        <input type="tel" id="emp-telefono" required class="input-form">
+                    </div>
+                </div>
+                <div>
+                    <label class="label-form">Correo Electrónico</label>
+                    <input type="email" id="emp-correo" class="input-form">
+                </div>
+                <div>
+                    <label class="label-form">Estado</label>
+                    <select id="emp-estado" class="input-form">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-empleado')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Empleado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PERFIL DE ADMINISTRADOR -->
+    <div id="modal-perfil" class="modal-backdrop hidden">
+        <div class="modal-card max-w-lg">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white flex items-center justify-center font-bold text-sm uppercase shadow-sm" id="perfil-avatar-preview">
+                        AD
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg leading-tight">Mi Perfil de Administrador</h3>
+                        <p class="text-xs text-slate-400">Actualiza tus datos personales y credenciales de acceso</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-perfil')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-perfil" onsubmit="savePerfil(event)" class="mt-4 space-y-4">
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-semibold text-blue-800 uppercase tracking-wider">Cargo & Privilegios</span>
+                        <div id="perfil-cargo-badge" class="text-sm font-bold text-blue-900 mt-0.5">Administrador del Sistema</div>
+                    </div>
+                    <span class="badge badge-activo text-xs px-2.5 py-1">Cuenta Activa</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Nombre <span class="text-rose-500">*</span></label>
+                        <input type="text" id="perfil-nombre" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Apellido <span class="text-rose-500">*</span></label>
+                        <input type="text" id="perfil-apellido" required class="input-form">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Correo Electrónico <span class="text-rose-500">*</span></label>
+                        <input type="email" id="perfil-correo" required class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Teléfono <span class="text-rose-500">*</span></label>
+                        <input type="tel" id="perfil-telefono" required class="input-form">
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                        <i data-lucide="shield" class="w-3.5 h-3.5 text-blue-600"></i> Credenciales de Inicio de Sesión
+                    </h4>
+                    <div>
+                        <label class="label-form">Nombre de Usuario (@usuario) <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-mono text-sm">@</span>
+                            <input type="text" id="perfil-usuario" required class="input-form pl-8 font-medium">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <label class="label-form flex items-center justify-between">
+                                <span>Nueva Contraseña</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Opcional</span>
+                            </label>
+                            <input type="password" id="perfil-password" placeholder="••••••••" class="input-form text-sm" autocomplete="new-password">
+                        </div>
+                        <div>
+                            <label class="label-form flex items-center justify-between">
+                                <span>Confirmar Contraseña</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Opcional</span>
+                            </label>
+                            <input type="password" id="perfil-password-confirm" placeholder="••••••••" class="input-form text-sm" autocomplete="new-password">
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Si dejas la contraseña vacía, se conservará la contraseña actual.</p>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-perfil')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" id="btn-save-perfil" class="btn-primary flex items-center gap-1.5">
+                        <i data-lucide="save" class="w-4 h-4"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts de la Aplicación -->
+    <script src="frontend/js/api.js"></script>
+    <script src="frontend/js/app.js"></script>
+</body>
+
+</html>
