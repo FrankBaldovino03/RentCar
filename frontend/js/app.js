@@ -70,6 +70,8 @@ function initAuth() {
         const pInput = document.getElementById("login-password");
         if (uInput) uInput.value = "";
         if (pInput) pInput.value = "";
+        checkHealth();
+        setInterval(checkHealth, 10000);
         if (window.lucide) lucide.createIcons();
         return;
     }
@@ -273,25 +275,37 @@ function showForgotPassHelp() {
 async function checkHealth() {
     const badge = document.getElementById("db-badge");
     const details = document.getElementById("db-details");
-    if (!badge) return;
+    const loginBadge = document.getElementById("login-status-badge");
 
     try {
         const data = await Api.health();
         if (data.status === "online") {
-            badge.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-            badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online`;
+            if (badge) {
+                badge.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online`;
+            }
             if (details) {
                 const version = (data.version || "").split("-")[0];
                 details.textContent = `${data.database} (MySQL v${version})`;
+            }
+            if (loginBadge) {
+                loginBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200 mb-2.5 shadow-xs";
+                loginBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span>Base de Datos MySQL • Online</span>`;
             }
         } else {
             throw new Error(data.message || "Error al conectar");
         }
     } catch (err) {
-        badge.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20";
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Desconectado`;
+        if (badge) {
+            badge.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20";
+            badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Desconectado`;
+        }
         if (details) {
             details.textContent = "Sin enlace a MySQL Server";
+        }
+        if (loginBadge) {
+            loginBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-semibold border border-rose-200 mb-2.5 shadow-xs";
+            loginBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>Base de Datos MySQL • Desconectada</span>`;
         }
     }
 }
