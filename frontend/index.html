@@ -5,11 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoRent Pro - Gestión Operativa y Control de Flota</title>
-    <script>
-        // Protección instantánea: si no hay sesión activa en esta pestaña, ir a login.html antes de pintar el Dashboard
-        if (!sessionStorage.getItem("autorent_user")) {
-            window.location.replace("login.html");
+    <style>
+        html:not(.auth-verified) body {
+            display: none !important;
         }
+    </style>
+    <script>
+        // Protección instantánea: si no viene de login válido en esta sesión, ir a login.html sin pintar nada
+        (function() {
+            var user = sessionStorage.getItem("autorent_user");
+            var authOk = sessionStorage.getItem("autorent_authenticated") === "true";
+            if (!user || !authOk) {
+                window.location.replace("login.html");
+            } else {
+                document.documentElement.classList.add("auth-verified");
+            }
+        })();
     </script>
 
     <!-- Google Fonts -->

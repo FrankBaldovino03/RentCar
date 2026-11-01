@@ -59,10 +59,12 @@ function isLoginPage() {
 function initAuth() {
     const isLogin = isLoginPage();
     const storedUser = sessionStorage.getItem("autorent_user");
+    const isAuth = sessionStorage.getItem("autorent_authenticated") === "true";
 
     if (isLogin) {
         currentUser = null;
         sessionStorage.removeItem("autorent_user");
+        sessionStorage.removeItem("autorent_authenticated");
         localStorage.removeItem("autorent_user");
         const uInput = document.getElementById("login-usuario");
         const pInput = document.getElementById("login-password");
@@ -73,7 +75,7 @@ function initAuth() {
     }
 
     // Estamos en index.html (Panel Principal)
-    if (!storedUser) {
+    if (!storedUser || !isAuth) {
         window.location.replace("login.html");
         return;
     }
@@ -82,11 +84,13 @@ function initAuth() {
         currentUser = JSON.parse(storedUser);
     } catch (e) {
         sessionStorage.removeItem("autorent_user");
+        sessionStorage.removeItem("autorent_authenticated");
         localStorage.removeItem("autorent_user");
         window.location.replace("login.html");
         return;
     }
 
+    document.documentElement.classList.add("auth-verified");
     showAppLayout();
     checkHealth();
     loadCatalogs();
@@ -166,6 +170,7 @@ async function handleLogin(e) {
         const result = await Api.login(usuario, password);
         currentUser = result.user;
         sessionStorage.setItem("autorent_user", JSON.stringify(currentUser));
+        sessionStorage.setItem("autorent_authenticated", "true");
         if (!rememberInput || rememberInput.checked) {
             localStorage.setItem("autorent_user", JSON.stringify(currentUser));
         } else {
@@ -214,6 +219,7 @@ async function logout() {
     if (confirm.isConfirmed) {
         currentUser = null;
         sessionStorage.removeItem("autorent_user");
+        sessionStorage.removeItem("autorent_authenticated");
         localStorage.removeItem("autorent_user");
         window.location.href = "login.html";
     }
