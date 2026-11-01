@@ -58,10 +58,12 @@ function isLoginPage() {
 
 function initAuth() {
     const isLogin = isLoginPage();
-    const storedUser = sessionStorage.getItem("autorent_user") || localStorage.getItem("autorent_user");
+    const storedUser = sessionStorage.getItem("autorent_user");
 
     if (isLogin) {
         currentUser = null;
+        sessionStorage.removeItem("autorent_user");
+        localStorage.removeItem("autorent_user");
         const uInput = document.getElementById("login-usuario");
         const pInput = document.getElementById("login-password");
         if (uInput) uInput.value = "";
